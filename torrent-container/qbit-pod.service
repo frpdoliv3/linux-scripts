@@ -1,0 +1,12 @@
+[Unit]
+Description=Start existing qBittorrent Pod
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/podman pod start qbit-pod
+ExecStop=/usr/bin/podman pod stop qbit-pod
+
+[Install]
+WantedBy=default.target

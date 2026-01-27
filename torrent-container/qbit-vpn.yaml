@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: qbit-vpn-secrets
+stringData:
+  airvpn_wg_private_key: ${AIRVPN_WG_PRIVATE_KEY}
+  airvpn_wg_preshared_key: ${AIRVPN_WG_PRESHARED_KEY}
+  airvpn_wg_addresses: ${AIRVPN_WG_ADDRESSES}
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: qbit-pod
+spec:
+  containers:
+    - name: gluetun
+      image: docker.io/qmcgaw/gluetun:v3
+      securityContext:
+        capabilities:
+          add: ["NET_ADMIN"]
+      ports:
+        - containerPort: 8080
+          hostPort: 8080
+      volumeMounts:
+        - mountPath: /dev/net/tun
+          name: dev-tun
+        - mountPath: /etc/secrets
+          name: vpn-secret-volume
+          readOnly: true
+      env:
+        - name: VPN_SERVICE_PROVIDER
+          value: airvpn
+        - name: VPN_TYPE
+          value: wireguard
+        - name: WIREGUARD_PRIVATE_KEY_SECRETFILE
+          value: /etc/secrets/airvpn_wg_private_key
+        - name: WIREGUARD_PRESHARED_KEY_SECRETFILE
+          value: /etc/secrets/airvpn_wg_preshared_key
+        - name: WIREGUARD_ADDRESSES_SECRETFILE
+          value: /etc/secrets/airvpn_wg_addresses
+        - name: SERVER_REGIONS
+          value: ${AIRVPN_SERVER_REGIONS}
+        - name: FIREWALL_VPN_INPUT_PORTS
+          value: "${AIRVPN_INPUT_PORT}"
+
+    - name: qbittorrent
+      image: docker.io/linuxserver/qbittorrent:5.1.4
+      volumeMounts:
+        - mountPath: /config
+          name: qbit-config
+        - mountPath: /downloads
+          name: qbit-downloads
+      env:
+        - name: PUID
+          value: "${QBIT_PUID}"
+        - name: PGID
+          value: "${QBIT_PGID}"
+        - name: TZ
+          value: "${QBIT_TZ}"
+        - name: WEBUI_PORT
+          value: "${QBIT_WEBUI_PORT}"
+        - name: TORRENTING_PORT
+          value: "${AIRVPN_INPUT_PORT}"
+
+  volumes:
+    - name: vpn-secret-volume
+      secret:
+        secretName: qbit-vpn-secrets
+
+    - name: dev-tun
+      hostPath:
+        path: /dev/net/tun
+
+    - name: qbit-config
+      hostPath:
+        path: ${QBIT_CONFIG}
+        type: DirectoryOrCreate
+
+    - name: qbit-downloads
+      hostPath:
+        path: ${QBIT_DOWNLOADS}
+        type: DirectoryOrCreate
