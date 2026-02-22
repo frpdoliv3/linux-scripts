@@ -16,8 +16,9 @@ class PtyxisMenuProvider(GObject.GObject, Nautilus.MenuProvider):
             return
 
         command = (
-            f"flatpak run app.devsuite.Ptyxis --tab --working-directory={target_path}"
+            f"flatpak run app.devsuite.Ptyxis --tab --working-directory={shlex.quote(target_path)}"
         )
+        print(command)
         subprocess.Popen(shlex.split(command), start_new_session=True)
 
     def get_file_items(
