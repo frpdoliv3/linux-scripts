@@ -51,6 +51,8 @@ spec:
           name: qbit-config
         - mountPath: /downloads
           name: qbit-downloads
+        - mountPath: /media/Interface
+          name: qbit-downloads-interface
       env:
         - name: PUID
           value: "${QBIT_PUID}"
@@ -81,3 +83,8 @@ spec:
       hostPath:
         path: ${QBIT_DOWNLOADS}
         type: DirectoryOrCreate
+
+    - name: qbit-downloads-interface
+      hostPath:
+        path: /media/Interface
+        type: Directory
