@@ -1,0 +1,17 @@
+[Unit]
+Description=qBittorrent + Gluetun
+After=network-online.target
+Wants=network-online.target
+
+[Kube]
+Yaml=/var/lib/qbit/.config/containers/k8s/qbit-pod.yaml
+LogDriver=journald
+LogOpt=tag={{.Name}}
+SetWorkingDirectory=yaml
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target
