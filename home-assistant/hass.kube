@@ -1,0 +1,16 @@
+[Unit]
+Description=Home Assistant stack
+After=network-online.target
+Wants=network-online.target
+
+[Kube]
+Yaml=/etc/containers/k8s/home-assistant.yaml
+SetWorkingDirectory=yaml
+LogDriver=journald
+LogOpt=tag={{.Name}}
+
+[Service]
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

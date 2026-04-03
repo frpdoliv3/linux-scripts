@@ -1,94 +1,88 @@
 apiVersion: v1
 kind: Pod
 metadata:
-    name: home-assistant
+  name: home-assistant
 spec:
-    hostNetwork: true
-    restartPolicy: Always
+  hostNetwork: true
+  restartPolicy: Always
 
-    initContainers:
-        - name: init-ha-pod-data
-          image: docker.io/library/alpine:3.20
-          command:
-              - /bin/sh
-              - -ec
-              - |
-                  SONOFF_VERSION="v3.11.1"
+  initContainers:
+    - name: init-hass-pod-data
+      image: docker.io/library/alpine:3.20
+      command:
+        - /bin/sh
+        - -ec
+        - |
+          SONOFF_VERSION="v3.11.1"
 
-                  mkdir -p \
-                    /vol/ha-config/custom_components \
-                    /vol/matter-server-data \
-                    /tmp/sonoff
+          mkdir -p \
+            /vol/hass-config/custom_components \
+            /vol/matter-server-data \
+            /tmp/sonoff
 
-                  wget -O /tmp/sonoff.tar.gz \
-                    "https://github.com/AlexxIT/SonoffLAN/archive/refs/tags/${SONOFF_VERSION}.tar.gz"
+          wget -O /tmp/sonoff.tar.gz \
+            "https://github.com/AlexxIT/SonoffLAN/archive/refs/tags/${SONOFF_VERSION}.tar.gz"
 
-                  tar -xzf /tmp/sonoff.tar.gz -C /tmp/sonoff --strip-components=2 \
-                    "SonoffLAN-${SONOFF_VERSION#v}/custom_components/sonoff"
+          tar -xzf /tmp/sonoff.tar.gz -C /tmp/sonoff --strip-components=2 \
+            "SonoffLAN-${SONOFF_VERSION#v}/custom_components/sonoff"
 
-                  rm -rf /vol/ha-config/custom_components/sonoff
-                  cp -R /tmp/sonoff/sonoff /vol/ha-config/custom_components
+          rm -rf /vol/hass-config/custom_components/sonoff
+          cp -R /tmp/sonoff/sonoff /vol/hass-config/custom_components
 
-                  find /vol/ha-config/custom_components/sonoff -maxdepth 2 -type f | sort
-          volumeMounts:
-              - name: ha-pod-data
-                mountPath: /vol
+          find /vol/hass-config/custom_components/sonoff -maxdepth 2 -type f | sort
+      volumeMounts:
+        - name: hass-pod-data
+          mountPath: /vol
 
-    containers:
-        - name: ha
-          image: ghcr.io/home-assistant/home-assistant:stable
-          securityContext:
-              capabilities:
-                  add:
-                      - NET_ADMIN
-                      - NET_RAW
-          volumeMounts:
-              - name: ha-pod-data
-                mountPath: /config
-                subPath: ha-config
-              - name: dbus
-                mountPath: /run/dbus
-                readOnly: true
-              - name: localtime
-                mountPath: /etc/localtime
-                readOnly: true
-
-        - name: matter-server
-          image: ghcr.io/matter-js/python-matter-server:stable
-          args:
-              - --storage-path
-              - /data
-              - --paa-root-cert-dir
-              - /data/credentials
-              - --bluetooth-adapter
-              - "0"
-          securityContext:
-              appArmorProfile:
-                  type: Unconfined
-          volumeMounts:
-              - name: ha-pod-data
-                mountPath: /data
-                subPath: matter-server-data
-              - name: dbus
-                mountPath: /run/dbus
-                readOnly: true
-
-    volumes:
-        - name: ha-pod-data
-          persistentVolumeClaim:
-              claimName: ha-pod-data
+  containers:
+    - name: hass
+      image: ghcr.io/home-assistant/home-assistant:stable
+      securityContext:
+        capabilities:
+          add:
+            - NET_ADMIN
+            - NET_RAW
+      volumeMounts:
+        - name: hass-pod-data
+          mountPath: /config
+          subPath: hass-config
         - name: dbus
-          hostPath:
-              path: /run/dbus
-              type: Directory
+          mountPath: /run/dbus
+          readOnly: true
         - name: localtime
-          hostPath:
-              path: /etc/localtime
-              type: File
+          mountPath: /etc/localtime
+          readOnly: true
 
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-    name: ha-pod-data
-spec: {}
+    - name: matter-server
+      image: ghcr.io/matter-js/python-matter-server:stable
+      args:
+        - --storage-path
+        - /data
+        - --paa-root-cert-dir
+        - /data/credentials
+        - --bluetooth-adapter
+        - "0"
+      securityContext:
+        appArmorProfile:
+          type: Unconfined
+      volumeMounts:
+        - name: hass-pod-data
+          mountPath: /data
+          subPath: matter-server-data
+        - name: dbus
+          mountPath: /run/dbus
+          readOnly: true
+
+  volumes:
+    - name: hass-pod-data
+      hostPath:
+        path: /home/foliveira/Misc/.quadlets/hass-pod-data
+        type: DirectoryOrCreate
+    - name: dbus
+      hostPath:
+        path: /run/dbus
+        type: Directory
+    - name: localtime
+      hostPath:
+        path: /etc/localtime
+        type: File
