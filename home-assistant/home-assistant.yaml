@@ -76,7 +76,7 @@ spec:
   volumes:
     - name: hass-pod-data
       hostPath:
-        path: /home/foliveira/Misc/.quadlets/hass-pod-data
+        path: /mnt/sata_misc/.quadlet-volumes/hass-pod-data
         type: DirectoryOrCreate
     - name: dbus
       hostPath:
